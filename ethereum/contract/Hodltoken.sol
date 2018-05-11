@@ -1,9 +1,10 @@
-pragma solidity ^0.4.10;
+pragma solidity ^0.4.23;
 
 import 'browser/SafeMath.sol';
 import 'browser/ERC20.sol';
 import 'browser/ERC223.sol';
 import 'browser/ERC223ReceivingContract.sol';
+import 'browser/ERC677Receiver.sol';
 
 contract HodlToken is ERC20, ERC223 {
   using SafeMath for uint;
@@ -16,7 +17,7 @@ contract HodlToken is ERC20, ERC223 {
     mapping (address => uint256) internal balances;
     mapping (address => mapping (address => uint256)) internal allowed;
 
-    function StandardToken(string name, string symbol, uint8 decimals, uint256 totalSupply) public {
+    function HodlToken(string name, string symbol, uint8 decimals, uint256 totalSupply) public {
         _symbol = symbol;
         _name = name;
         _decimals = decimals;
@@ -52,6 +53,11 @@ contract HodlToken is ERC20, ERC223 {
         return _totalSupply;
     }
 
+    function transferAndCall(address _recipient, uint256 _value) {
+        transfer(_recipient, _value);
+        require(ERC677Receiver(_recipient).tokenFallback(msg.sender, _value));
+    }
+
    function transfer(address _to, uint256 _value) public returns (bool) {
      require(_to != address(0));
      require(_value <= balances[msg.sender]);
@@ -70,10 +76,10 @@ contract HodlToken is ERC20, ERC223 {
      require(_value <= balances[_from]);
      require(_value <= allowed[_from][msg.sender]);
 
-    balances[_from] = SafeMath.sub(balances[_from], _value);
+     balances[_from] = SafeMath.sub(balances[_from], _value);
      balances[_to] = SafeMath.add(balances[_to], _value);
      allowed[_from][msg.sender] = SafeMath.sub(allowed[_from][msg.sender], _value);
-    Transfer(_from, _to, _value);
+     Transfer(_from, _to, _value);
      return true;
    }
 
@@ -107,7 +113,7 @@ contract HodlToken is ERC20, ERC223 {
    function transfer(address _to, uint _value, bytes _data) public {
     require(_value > 0 );
     if(isContract(_to)) {
-        ERC223ReceivingContract receiver =         ERC223ReceivingContract(_to);
+        ERC223ReceivingContract receiver = ERC223ReceivingContract(_to);
         receiver.tokenFallback(msg.sender, _value, _data);
     }
         balances[msg.sender] = balances[msg.sender].sub(_value);
@@ -123,5 +129,7 @@ contract HodlToken is ERC20, ERC223 {
       }
       return (length>0);
     }
+
+    
 
 }

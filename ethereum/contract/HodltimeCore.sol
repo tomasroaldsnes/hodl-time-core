@@ -1,9 +1,12 @@
 pragma solidity ^0.4.23;
 
+import 'browser/HodlToken.sol';
+import 'browser/SafeMath.sol';
 
-contract Accounts {
+
+contract HodlTime {
     // Account data structure and mapping to addresses
-    struct Account {
+    struct HodlTime {
         uint balance;
         uint timeLock;
         uint daysSet;
@@ -11,7 +14,14 @@ contract Accounts {
         uint depositLock;
         uint amountEarnedFromHodl;
     }
-    mapping (address => Account) private accounts;
+
+    
+    address token_address = 0x02Bc8E73D40801F30A7D9eE0F5431835A10A0E5c;
+    HodlToken hodl_token = HodlToken(token_address);
+
+    
+
+    mapping (address => HodlTime) private accounts;
     uint public users = 0;
     uint public minimumWeeklySavingsAmount = 10000000000000000;
     uint public minimumTimeForPayout = 30;
@@ -20,6 +30,11 @@ contract Accounts {
     // Constructor
     constructor() public {
         creator = msg.sender;
+    }
+    
+    function changeTokenAddress(address newTokenAddress) public {
+        require(msg.sender == creator);
+        token_address = newTokenAddress;
     }
 
     // Get the deployed contract address
@@ -52,12 +67,14 @@ contract Accounts {
     }
     
     function getAvailableFundAmount10()public view returns (uint){
-        return (accounts[this].balance)/ (users*10);
+        //return (accounts[this].balance)/ (users*10);
+        return SafeMath.div(accounts[this].balance, SafeMath.mul(users, 10));
         
     }
     
     function getAvailableFundAmount5()public view returns (uint){
-        return (accounts[this].balance)/ (users*5);
+        //eturn (accounts[this].balance)/ (users*5);
+        return SafeMath.div(accounts[this].balance, SafeMath.mul(users, 5));
         
     }
     
@@ -71,10 +88,11 @@ contract Accounts {
     function setHodlTime(uint time)public {
         require(time > 0);
         require(time==30 || time == 90 || time == 180 || time == 365);
-        require( (now + time * 1 minutes) > accounts[msg.sender].timeLock);
-        
-        accounts[msg.sender].timeLock = (now + time * 1 minutes);
-        accounts[msg.sender].daysSet = (time);
+        require( SafeMath.add(now, SafeMath.mul(time, 1 minutes)) > accounts[msg.sender].timeLock);
+        //SafeMath.add(now, SafeMath.mul(time, 1 minutes))
+
+        accounts[msg.sender].timeLock = SafeMath.add(now, SafeMath.mul(time, 1 minutes));
+        accounts[msg.sender].daysSet = time;
         accounts[msg.sender].timeStart = now;
         users += 1;
         
@@ -91,19 +109,35 @@ contract Accounts {
         require(msg.value >= minimumWeeklySavingsAmount);
         
         
-        
+        //weakhand fund payout to user
         if(accounts[this].balance > 0 && accounts[msg.sender].daysSet > minimumTimeForPayout){
             if(msg.value < 100000000000000000){
-                accounts[msg.sender].balance += accounts[this].balance / (users*10);
-                accounts[msg.sender].amountEarnedFromHodl += accounts[this].balance / (users*10);
-                accounts[this].balance -= accounts[this].balance / (users*10);
+                accounts[msg.sender].balance += SafeMath.div(accounts[this].balance, SafeMath.mul(users, 10));
+                accounts[msg.sender].amountEarnedFromHodl += SafeMath.div(accounts[this].balance, SafeMath.mul(users, 10));
+                accounts[this].balance -= SafeMath.div(accounts[this].balance, SafeMath.mul(users, 10));
+
+                //hodl_token.transferFrom(this, msg.sender, 1000);
+
             } else{
-                accounts[msg.sender].balance += (accounts[this].balance)/ (users*5);
-                accounts[msg.sender].amountEarnedFromHodl += accounts[this].balance / (users*5);
-                accounts[this].balance -= (accounts[this].balance)/ (users*5);
+                accounts[msg.sender].balance += SafeMath.div(accounts[this].balance, SafeMath.mul(users, 5));
+                accounts[msg.sender].amountEarnedFromHodl += SafeMath.div(accounts[this].balance, SafeMath.mul(users, 5));
+                accounts[this].balance -= SafeMath.div(accounts[this].balance, SafeMath.mul(users, 5));
             }
                 
         }
+            //token payout to user
+        
+        if(accounts[msg.sender].daysSet == 30){
+            hodl_token.transferFrom(this, msg.sender, 100);
+        }
+        else if(accounts[msg.sender].daysSet == 180){
+            hodl_token.transferFrom(this, msg.sender, 500);
+        }
+        else if(accounts[msg.sender].daysSet == 365){
+            hodl_token.transferFrom(this, msg.sender, 1000);
+        }
+
+        
         accounts[msg.sender].depositLock = (now + 7 minutes);
         accounts[msg.sender].balance += msg.value;
         
@@ -142,7 +176,10 @@ contract Accounts {
     // Transfer 10% to the contract and then withdraw the rest
     function earlyWithdraw() public {
         // Send 5% to the contract
-        uint penalty = (accounts[msg.sender].balance / 20);
+        uint penalty = SafeMath.div(accounts[msg.sender].balance, 20);
+        
+        
+        
         accounts[msg.sender].balance -= penalty;
         
         accounts[this].balance += (penalty / 2);
@@ -163,6 +200,21 @@ contract Accounts {
     // Get the sender's current time-lock
     function getTimeLock() public view returns (uint) {
         return accounts[msg.sender].timeLock;
+    }
+
+    
+
+    function tokenFallback(address _sender, uint256 _value) public returns (bool) {
+
+        require(msg.sender == token_address); //token address has to be sender
+
+        require(_value == 50000); //value has to be desired value for voiding time contract
+
+
+        //here can we void timecontract for sender
+        accounts[_sender].timeLock = now;
+        
+        return true;
     }
     
     
