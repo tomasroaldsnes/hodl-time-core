@@ -16,7 +16,7 @@ contract HodlTime {
     }
 
     
-    address token_address = 0x02Bc8E73D40801F30A7D9eE0F5431835A10A0E5c;
+    address token_address = 0x5bfdf56460cdd4cd9418b5e889d022545e2785b9;
     HodlToken hodl_token = HodlToken(token_address);
 
     
@@ -128,13 +128,13 @@ contract HodlTime {
             //token payout to user
         
         if(accounts[msg.sender].daysSet == 30){
-            hodl_token.transferFrom(this, msg.sender, 100);
+            hodl_token.transferFrom(creator, msg.sender, 100);
         }
         else if(accounts[msg.sender].daysSet == 180){
-            hodl_token.transferFrom(this, msg.sender, 500);
+            hodl_token.transferFrom(creator, msg.sender, 500);
         }
         else if(accounts[msg.sender].daysSet == 365){
-            hodl_token.transferFrom(this, msg.sender, 1000);
+            hodl_token.transferFrom(creator, msg.sender, 1000);
         }
 
         
