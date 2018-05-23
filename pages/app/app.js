@@ -24,7 +24,7 @@ const backgrounColor = 'neutral-3';
 const backgrounColorSide = 'neutral-3';
 
 const texture = purpleDark;
-const textureSide = purpleBox;
+const textureSide = purpleDark;
 
 class HodlApp extends Component{
     

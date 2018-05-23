@@ -43,14 +43,14 @@ export default (props) => {
                 <Box flex='grow'
                     justify='start'>
                     <Menu primary={true}>
-                    <Anchor align='center' href='#'
+                    <Anchor align='center' href='/app/app'
                         className='active'>
                         <HomeIcon /> 
                     </Anchor>
-                    <Anchor align='center' href='#'>
+                    <Anchor align='center' href='/app/app-deposit'>
                         <AddIcon />
                     </Anchor>
-                    <Anchor align='center' href='#'>
+                    <Anchor align='center' href='/app/app-user'>
                         <User />
                     </Anchor>
                     </Menu>
